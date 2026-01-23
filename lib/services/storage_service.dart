@@ -6,39 +6,56 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class StorageService {
   final _supabase = Supabase.instance.client;
 
+  /// Intenta listar buckets (solo para diagnóstico, puede fallar con anon key)
+  Future<List<String>> listarBuckets() async {
+    try {
+      final buckets = await _supabase.storage.listBuckets();
+      return buckets.map((b) => b.name).toList();
+    } catch (e) {
+      // listBuckets puede fallar con anon key, retornar lista vacía
+      return ['(No se pudo listar - permisos insuficientes)'];
+    }
+  }
+
   Future<String> uploadImage(File file, String userId) async {
     String debugInfo = '';
     
     try {
-      // PASO 1: Listar buckets
-      debugInfo += 'PASO 1: Listando buckets...\n';
-      final buckets = await _supabase.storage.listBuckets();
-      final bucketNames = buckets.map((b) => b.name).toList();
-      debugInfo += 'Buckets encontrados: $bucketNames\n';
-
-      // PASO 2: Verificar que existe "imagenes"
-      debugInfo += 'PASO 2: Buscando bucket "imagenes"...\n';
-      final existeImagenes = buckets.any((b) => b.name == 'imagenes');
-      
-      if (!existeImagenes) {
-        throw Exception('❌ Bucket "imagenes" NO existe.\nBuckets disponibles: $bucketNames');
+      // PASO 1: Intentar listar buckets (solo informativo)
+      debugInfo += 'PASO 1: Intentando listar buckets...\n';
+      try {
+        final buckets = await _supabase.storage.listBuckets();
+        final bucketNames = buckets.map((b) => b.name).toList();
+        debugInfo += 'Buckets encontrados: $bucketNames\n';
+      } catch (e) {
+        debugInfo += 'No se pudo listar buckets (normal con anon key): $e\n';
       }
-      debugInfo += '✅ Bucket "imagenes" encontrado\n';
 
-      // PASO 3: Leer archivo
-      debugInfo += 'PASO 3: Leyendo archivo...\n';
+      // PASO 2: Leer archivo
+      debugInfo += 'PASO 2: Leyendo archivo...\n';
+      debugInfo += 'Ruta del archivo: ${file.path}\n';
+      
+      if (!await file.exists()) {
+        throw Exception('El archivo no existe en la ruta: ${file.path}');
+      }
+      
       final bytes = await file.readAsBytes();
-      debugInfo += 'Bytes: ${bytes.length}\n';
+      debugInfo += 'Bytes leídos: ${bytes.length}\n';
 
-      // PASO 4: Preparar nombre
-      debugInfo += 'PASO 4: Preparando nombre...\n';
+      if (bytes.isEmpty) {
+        throw Exception('El archivo está vacío');
+      }
+
+      // PASO 3: Preparar nombre
+      debugInfo += 'PASO 3: Preparando nombre...\n';
       final extension = path.extension(file.path).toLowerCase();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = '${userId}_$timestamp$extension';
-      debugInfo += 'Nombre: $fileName\n';
+      debugInfo += 'Nombre del archivo: $fileName\n';
+      debugInfo += 'Content-Type: ${_getContentType(extension)}\n';
 
-      // PASO 5: Subir
-      debugInfo += 'PASO 5: Subiendo archivo...\n';
+      // PASO 4: Subir al bucket "imagenes"
+      debugInfo += 'PASO 4: Subiendo a bucket "imagenes"...\n';
       await _supabase.storage.from('imagenes').uploadBinary(
             fileName,
             bytes,
@@ -46,19 +63,25 @@ class StorageService {
               contentType: _getContentType(extension),
             ),
           );
-      debugInfo += '✅ Archivo subido exitosamente\n';
+      debugInfo += 'Archivo subido exitosamente\n';
 
-      // PASO 6: Obtener URL
-      debugInfo += 'PASO 6: Obteniendo URL...\n';
+      // PASO 5: Obtener URL pública
+      debugInfo += 'PASO 5: Obteniendo URL pública...\n';
       final publicUrl = _supabase.storage.from('imagenes').getPublicUrl(fileName);
       debugInfo += 'URL: $publicUrl\n';
 
       return publicUrl;
       
     } on StorageException catch (e) {
-      throw Exception('$debugInfo\n❌ StorageException:\nCódigo: ${e.statusCode}\nMensaje: ${e.message}');
+      throw Exception(
+        '$debugInfo\n'
+        '--- ERROR DE STORAGE ---\n'
+        'Código HTTP: ${e.statusCode}\n'
+        'Mensaje: ${e.message}\n'
+        'Error completo: $e'
+      );
     } catch (e) {
-      throw Exception('$debugInfo\n❌ Error: $e');
+      throw Exception('$debugInfo\n--- ERROR ---\n$e');
     }
   }
 

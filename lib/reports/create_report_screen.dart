@@ -40,50 +40,61 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   Future<void> _mostrarDiagnostico() async {
     await Future.delayed(const Duration(milliseconds: 500));
     
+    if (!mounted) return;
+    
+    String diagnostico = '';
+    bool hayError = false;
+    
     try {
-      final buckets = await Supabase.instance.client.storage.listBuckets();
-      final nombres = buckets.map((b) => b.name).join(', ');
+      // Verificar conexión a Supabase
+      diagnostico += 'Verificando conexión a Supabase...\n';
+      final user = Supabase.instance.client.auth.currentUser;
+      diagnostico += 'Usuario: ${user?.email ?? "No autenticado"}\n';
+      diagnostico += 'User ID: ${user?.id ?? "N/A"}\n\n';
       
-      if (!mounted) return;
+      // Intentar listar buckets
+      diagnostico += 'Intentando listar buckets...\n';
+      try {
+        final buckets = await Supabase.instance.client.storage.listBuckets();
+        if (buckets.isEmpty) {
+          diagnostico += 'Lista vacía (normal con anon key)\n';
+        } else {
+          final nombres = buckets.map((b) => b.name).join(', ');
+          diagnostico += 'Buckets: $nombres\n';
+        }
+      } catch (e) {
+        diagnostico += 'No se pudo listar buckets: $e\n';
+        diagnostico += '(Esto es normal con anon key)\n';
+      }
       
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('✅ Diagnóstico'),
-          content: SelectableText(
-            'Conectado a Supabase\n\nBuckets encontrados:\n$nombres',
-            style: const TextStyle(fontFamily: 'monospace'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      diagnostico += '\nEl bucket "imagenes" debe existir en Supabase.';
+      
     } catch (e) {
-      if (!mounted) return;
-      
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('❌ Error'),
-          content: SelectableText(
-            'Error al conectar:\n\n$e',
-            style: const TextStyle(fontFamily: 'monospace'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      hayError = true;
+      diagnostico += '\nError general: $e';
     }
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: Text(hayError ? 'Error de Diagnóstico' : 'Diagnóstico'),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            diagnostico,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickImage() async {
@@ -235,24 +246,28 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         );
       }
     } catch (e) {
+      debugPrint('ERROR AL GUARDAR REPORTE: $e');
       if (mounted) {
-        showDialog(
+        await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('❌ ERROR COMPLETO'),
-            content: SingleChildScrollView(
-              child: SelectableText(
-                e.toString(),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Error al Guardar'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  e.toString(),
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(ctx),
                 child: const Text('Cerrar'),
               ),
             ],
