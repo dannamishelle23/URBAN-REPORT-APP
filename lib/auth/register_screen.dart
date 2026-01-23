@@ -22,6 +22,10 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _confirmCtrl = TextEditingController();
   final _authService = AuthService();
 
+  bool _obscurePassword = true;
+  bool _hasMinLength = false;
+  bool _hasNumber = false;
+  bool _hasSymbol = false;
   bool _loading = false;
 
   late AnimationController _animController;
@@ -32,13 +36,23 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
+      duration: const Duration(milliseconds: 700));
     _fadeAnim = CurvedAnimation(
       parent: _animController,
       curve: Curves.easeIn,
     );
+    _passwordCtrl.addListener(() {
+      _onPasswordChanged(_passwordCtrl.text);
+    });
     _animController.forward();
+  }
+
+  void _onPasswordChanged(String value) {
+  setState(() {
+    _hasMinLength = value.length >= 6;
+    _hasNumber = RegExp(r'\d').hasMatch(value);
+    _hasSymbol = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value);
+    });
   }
 
   @override
@@ -151,7 +165,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                 prefixIcon: Icons.person_outline,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Ingrese su nombre';
+                    return 'Este campo no puede quedar vacío.';
+                  }
+                  if (value.length < 3) {
+                    return 'El nombre es muy corto.';
                   }
                   return null;
                 },
@@ -164,7 +181,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                 keyboardType: TextInputType.phone,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Ingrese su teléfono';
+                    return 'Este campo no puede ser vacío.';
+                  }
+                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                    return 'El teléfono debe tener 10 dígitos.';
                   }
                   return null;
                 },
@@ -177,10 +197,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Ingrese su correo';
+                    return 'Este campo no puede quedar vacío.';
                   }
                   if (!value.contains('@')) {
-                    return 'Correo no válido';
+                    return 'Correo no válido, debe contener el símbolo @.';
                   }
                   return null;
                 },
@@ -190,14 +210,48 @@ class _RegisterScreenState extends State<RegisterScreen>
                 controller: _passwordCtrl,
                 label: 'Contraseña',
                 prefixIcon: Icons.lock_outline,
-                obscureText: true,
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
                 validator: (value) {
-                  if (value == null || value.length < 6) {
-                    return 'Mínimo 6 caracteres';
+                  if (value == null || value.isEmpty) {
+                    return 'Este campo no puede quedar vacío.';
+                  }
+                  if (!(_hasMinLength && _hasNumber && _hasSymbol)) {
+                    return 'La contraseña no cumple los requisitos';
                   }
                   return null;
                 },
+                keyboardType: TextInputType.visiblePassword,
               ),
+
+              Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _PasswordCheck(
+                      text: 'Mínimo 6 caracteres',
+                      checked: _hasMinLength,
+                    ),
+                    _PasswordCheck(
+                      text: 'Contiene un número',
+                      checked: _hasNumber,
+                    ),
+                    _PasswordCheck(
+                      text: 'Contiene un símbolo',
+                      checked: _hasSymbol,
+                    ),
+                  ],
+                ),
 
               AuthInput(
                 controller: _confirmCtrl,
@@ -230,6 +284,37 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PasswordCheck extends StatelessWidget {
+  final String text;
+  final bool checked;
+
+  const _PasswordCheck({
+    required this.text,
+    required this.checked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          checked ? Icons.check_circle : Icons.radio_button_unchecked,
+          color: checked ? Colors.green : Colors.grey,
+          size: 18,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            color: checked ? Colors.green : Colors.grey,
+            fontSize: 13,
+          ),
+        ),
+      ],
     );
   }
 }
