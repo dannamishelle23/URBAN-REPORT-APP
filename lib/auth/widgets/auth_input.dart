@@ -6,6 +6,7 @@ class AuthInput extends StatelessWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final IconData? prefixIcon; 
 
   const AuthInput({
     super.key,
@@ -14,6 +15,7 @@ class AuthInput extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.validator,
+    this.prefixIcon, 
   });
 
   @override
@@ -27,6 +29,8 @@ class AuthInput extends StatelessWidget {
         validator: validator,
         decoration: InputDecoration(
           labelText: label,
+          prefixIcon:
+              prefixIcon != null ? Icon(prefixIcon) : null, // 👈 AQUÍ
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
