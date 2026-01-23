@@ -62,28 +62,28 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _setupAuthListener() {
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-      final event = data.event;
-      
-      if (event == AuthChangeEvent.passwordRecovery) {
-        setState(() => _showResetPassword = true);
-        return;
-      }
-      
-      if (event == AuthChangeEvent.signedIn) {
-        // Si NO fue login manual, viene de confirmacion de email
-        if (!isManualLogin) {
-          await Supabase.instance.client.auth.signOut();
-          if (mounted) {
-            setState(() {
-              _confirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
-            });
-          }
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+    final event = data.event;
+    
+    if (event == AuthChangeEvent.passwordRecovery) {
+      setState(() => _showResetPassword = true);
+      return;
+    }
+    
+    if (event == AuthChangeEvent.signedIn) {
+      if (!isManualLogin) {
+        // Esperar a que Supabase complete la confirmación
+        await Future.delayed(const Duration(seconds: 2));
+        await Supabase.instance.client.auth.signOut();
+        if (mounted) {
+          setState(() {
+            _confirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
+          });
         }
-        // Resetear la variable
-        isManualLogin = false;
       }
-    });
+      isManualLogin = false;
+    }
+  });
   }
 
   @override
