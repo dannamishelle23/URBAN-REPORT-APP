@@ -14,20 +14,21 @@ class AuthService {
   }
 
   Future<void> register({
-    required String email,
-    required String password,
-    String? fullName,
-    String? telefono,
-  }) async {
-    await _supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: {
-        'full_name': fullName,
-        'telefono': telefono,
-      },
-    );
-  }
+  required String email,
+  required String password,
+  String? fullName,
+  String? telefono,
+}) async {
+  await _supabase.auth.signUp(
+    email: email,
+    password: password,
+    emailRedirectTo: 'urbanreport://login-callback',
+    data: {
+      'full_name': fullName,
+      'telefono': telefono,
+    },
+  );
+}
 
   Future<void> resetPassword(String email) async {
     await _supabase.auth.resetPasswordForEmail(
