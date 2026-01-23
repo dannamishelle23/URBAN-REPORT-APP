@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // Auth
 import 'auth/login_screen.dart';
+import 'auth/reset_password_screen.dart';
 // Splash
 import 'splash/splash_screen.dart';
 
@@ -15,6 +16,10 @@ void main() async {
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
+    debug: false,
   );
   runApp(const MyApp());
 }
@@ -40,12 +45,38 @@ class MyApp extends StatelessWidget {
   }
 }
 
-//Decide que pantalla mostrar según el inicio de sesión
-class AuthGate extends StatelessWidget {
+//Decide que pantalla mostrar segun el inicio de sesion
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _showResetPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
+
+  void _setupAuthListener() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      if (event == AuthChangeEvent.passwordRecovery) {
+        setState(() => _showResetPassword = true);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_showResetPassword) {
+      return const ResetPasswordScreen();
+    }
+
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
@@ -58,12 +89,12 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // Si NO hay sesión → Login
+        // Si NO hay sesion -> Login
         if (session == null) {
           return const LoginScreen();
         }
 
-        // Si hay sesión → Enviar al dashboard principal
+        // Si hay sesion -> Enviar al dashboard principal
         return const DashboardScreen();
       },
     );
