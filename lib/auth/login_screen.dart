@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_service.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 import 'widgets/auth_button.dart';
 import 'widgets/auth_input.dart';
 import 'widgets/auth_layout.dart';
@@ -165,7 +166,30 @@ class _LoginScreenState extends State<LoginScreen> {
               },
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ForgotPasswordScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Olvide mi contrasena',
+                  style: TextStyle(
+                    color: Color(0xFF1e3a8a),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             AuthButton(
               text: 'Ingresar',
