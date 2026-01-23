@@ -22,10 +22,12 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _confirmCtrl = TextEditingController();
   final _authService = AuthService();
 
+  double _passwordStrength = 0.0;
   bool _obscurePassword = true;
   bool _hasMinLength = false;
   bool _hasNumber = false;
   bool _hasSymbol = false;
+  bool _showPasswordStrength = false;
   bool _loading = false;
 
   late AnimationController _animController;
@@ -49,9 +51,17 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   void _onPasswordChanged(String value) {
   setState(() {
+    _showPasswordStrength = value.isNotEmpty;
     _hasMinLength = value.length >= 6;
     _hasNumber = RegExp(r'\d').hasMatch(value);
-    _hasSymbol = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value);
+    _hasSymbol = RegExp(r'[-_!@#$%^&*(),.?":{}|<>]').hasMatch(value);
+
+    int score = 0;
+    if (_hasMinLength) score++;
+    if (_hasNumber) score++;
+    if (_hasSymbol) score++;
+
+    _passwordStrength = score / 3;
     });
   }
 
@@ -61,38 +71,51 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      setState(() => _loading = true);
-
-      await _authService.register(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text.trim(),
-      );
-
-      final user = Supabase.instance.client.auth.currentUser;
-
-      await Supabase.instance.client.from('profiles').insert({
-        'id': user!.id,
-        'email': user.email,
-        'full_name': _nameCtrl.text.trim(),
-        'telefono': _phoneCtrl.text.trim(),
-      });
-
-      _showMessage(
-        'Registro exitoso 🎉 Revisa tu correo para confirmar la cuenta',
-      );
-      Navigator.pop(context);
-    } on AuthException catch (e) {
-      _handleAuthError(e.message);
-    } catch (e) {
-      _showError('Error al registrar usuario');
-    } finally {
-      setState(() => _loading = false);
+  String get _passwordStrengthText {
+    if (_passwordStrength < 0.34) {
+      return 'Débil';
+    } else if (_passwordStrength < 0.67) {
+      return 'Media';
+    } else {
+      return 'Fuerte';
     }
   }
+
+    Color get _passwordStrengthColor {
+      if (_passwordStrength < 0.34) {
+        return const Color(0xFFdc2626);
+      } else if (_passwordStrength < 0.67) {
+        return const Color(0xFFf59e0b);
+      } else {
+        return const Color(0xFF10b981);
+      }
+    }
+
+  Future<void> _register() async {
+  if (_loading) return; 
+  if (!_formKey.currentState!.validate()) return;
+
+  try {
+    setState(() => _loading = true);
+    final email = _emailCtrl.text.trim().toLowerCase();
+    await _authService.register(
+      email: email,
+      password: _passwordCtrl.text.trim(),
+    );
+
+    _showMessage(
+      'Registro exitoso 🎉 Revisa tu correo para confirmar la cuenta',
+    );
+
+    Navigator.pop(context);
+  } on AuthException catch (e) {
+    _handleAuthError(e.message);
+  } catch (e) {
+    _showError('Error al registrar usuario');
+  } finally {
+    setState(() => _loading = false);
+  }
+}
 
   void _handleAuthError(String message) {
     if (message.contains('already registered')) {
@@ -136,7 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               const Icon(
                 Icons.person_add_alt_1,
                 size: 70,
-                color: Colors.blueAccent,
+                color: Color(0xFF1e3a8a),
               ),
               const SizedBox(height: 16),
 
@@ -154,7 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: Colors.grey.shade700,
                 ),
               ),
 
@@ -191,6 +214,9 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
               
               AuthInput(
+                autocorrect: false,
+                enableSuggestions: false,
+                textCapitalization: TextCapitalization.none,
                 controller: _emailCtrl,
                 label: 'Correo electrónico',
                 prefixIcon: Icons.email_outlined,
@@ -199,8 +225,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                   if (value == null || value.isEmpty) {
                     return 'Este campo no puede quedar vacío.';
                   }
-                  if (!value.contains('@')) {
-                    return 'Correo no válido, debe contener el símbolo @.';
+                  final email = value.trim();
+                  final emailRegex = RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (!emailRegex.hasMatch(email)) {
+                    return 'Correo electrónico no válido.';
                   }
                   return null;
                 },
@@ -235,6 +264,33 @@ class _RegisterScreenState extends State<RegisterScreen>
                 keyboardType: TextInputType.visiblePassword,
               ),
 
+              if (_showPasswordStrength) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _passwordStrengthText,
+                  style: TextStyle(
+                    color: _passwordStrengthColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+              ),
+
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(
+                  begin: 0,
+                  end: _passwordStrength,
+                ),
+                duration: const Duration(milliseconds: 300),
+                builder: (context, value, _) {
+                  return LinearProgressIndicator(
+                    value: value,
+                    minHeight: 6,
+                    backgroundColor: Colors.grey.shade300,
+                    color: _passwordStrengthColor,
+                  );
+                },
+              ),
+
               Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -251,7 +307,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       checked: _hasSymbol,
                     ),
                   ],
-                ),
+              ),
+            ],
 
               AuthInput(
                 controller: _confirmCtrl,
@@ -271,7 +328,9 @@ class _RegisterScreenState extends State<RegisterScreen>
               AuthButton(
                 text: 'Registrarme',
                 loading: _loading,
-                onPressed: _register,
+                onPressed: (_passwordStrength == 1.0 && !_loading)
+                    ? _register
+                    : null,
               ),
 
               const SizedBox(height: 16),

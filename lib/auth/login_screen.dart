@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'auth_service.dart';
 import 'register_screen.dart';
-import 'forgot_password_screen.dart';
 import 'widgets/auth_button.dart';
 import 'widgets/auth_input.dart';
 import 'widgets/auth_layout.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,37 +14,14 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _authService = AuthService();
 
   bool _loading = false;
-
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeIn,
-    );
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
+  bool _obscurePassword = true;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -56,56 +33,57 @@ class _LoginScreenState extends State<LoginScreen>
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),
       );
+
+      await _ensureProfile();
+      // AuthGate se encarga del redirect
+
     } on AuthException catch (e) {
-      _handleAuthError(e.message);
+      _showError(_mapAuthError(e.message));
     } catch (e) {
-      _showError('Error de conexión. Intente nuevamente.');
+      _showError('Error al iniciar sesión');
     } finally {
       setState(() => _loading = false);
     }
   }
 
-  Future<void> _resetPassword() async {
-    if (_emailCtrl.text.isEmpty) {
-      _showError('Ingrese su correo para recuperar la contraseña');
-      return;
-    }
+  /// Crea el perfil SOLO si no existe
+  Future<void> _ensureProfile() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
 
-    try {
-      await _authService.resetPassword(_emailCtrl.text.trim());
-      _showMessage('Correo de recuperación enviado 📩');
-    } catch (e) {
-      _showError('No se pudo enviar el correo');
+    if (user == null) return;
+
+    final profile = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (profile == null) {
+      await supabase.from('profiles').insert({
+        'id': user.id,
+        'email': user.email,
+        'full_name': '',
+        'telefono': '',
+      });
     }
   }
 
-  // 🎯 Manejo real de errores
-  void _handleAuthError(String message) {
+  String _mapAuthError(String message) {
     if (message.contains('Invalid login credentials')) {
-      _showError('Correo o contraseña incorrectos');
-    } else if (message.contains('Email not confirmed')) {
-      _showError('Debes confirmar tu correo antes de ingresar');
-    } else if (message.contains('User not found')) {
-      _showError('Usuario no registrado');
-    } else {
-      _showError(message);
+      return 'Correo o contraseña incorrectos';
     }
+    if (message.contains('Email not confirmed')) {
+      return 'Debes confirmar tu correo primero';
+    }
+    return message;
   }
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showMessage(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
+        backgroundColor: const Color(0xFFdc2626),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -115,125 +93,90 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     return AuthLayout(
       title: '',
-      child: FadeTransition(
-        opacity: _fadeAnim,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            const Icon(
+              Icons.lock_outline,
+              size: 70,
+              color: Color(0xFF1e3a8a),
+            ),
+            const SizedBox(height: 16),
 
-              // 🧭 Logo / Branding
-              const Icon(
-                Icons.location_city,
-                size: 70,
-                color: Colors.blueAccent,
+            const Text(
+              'Iniciar sesión',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 16),
+            ),
 
-              // 🎯 Título
-              const Text(
-                'Bienvenido a UrbanReport',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+            const SizedBox(height: 32),
+
+            AuthInput(
+              controller: _emailCtrl,
+              label: 'Correo electrónico',
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Ingrese su correo';
+                }
+                if (!value.contains('@')) {
+                  return 'Correo no válido';
+                }
+                return null;
+              },
+            ),
+
+            AuthInput(
+              controller: _passwordCtrl,
+              label: 'Contraseña',
+              prefixIcon: Icons.lock_outline,
+              obscureText: _obscurePassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off
+                      : Icons.visibility,
                 ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // 📝 Subtítulo
-              Text(
-                'Reporta problemas urbanos de forma rápida y sencilla',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // 📧 Email
-              AuthInput(
-                controller: _emailCtrl,
-                label: 'Correo electrónico',
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: Icons.email_outlined,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingrese su correo';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Correo no válido';
-                  }
-                  return null;
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
                 },
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Ingrese su contraseña';
+                }
+                return null;
+              },
+            ),
 
-              // 🔑 Password
-              AuthInput(
-                controller: _passwordCtrl,
-                label: 'Contraseña',
-                obscureText: true,
-                prefixIcon: Icons.lock_outline,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingrese su contraseña';
-                  }
-                  if (value.length < 6) {
-                    return 'Mínimo 6 caracteres';
-                  }
-                  return null;
-                },
-              ),
+            const SizedBox(height: 24),
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ForgotPasswordScreen(),
-                        ),
-                        );
-                  },
-                  child: const Text('¿Olvidaste tu contraseña?'),
-                ),
-              ),
+            AuthButton(
+              text: 'Ingresar',
+              loading: _loading,
+              onPressed: _login,
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-              // 🚀 Botón login
-              AuthButton(
-                text: 'Iniciar sesión',
-                loading: _loading,
-                onPressed: _login,
-              ),
-
-              const SizedBox(height: 24),
-
-              // ➕ Registro
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('¿No tienes cuenta?'),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RegisterScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text('Regístrate'),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RegisterScreen(),
                   ),
-                ],
-              ),
-            ],
-          ),
+                );
+              },
+              child: const Text('¿No tienes cuenta? Regístrate'),
+            ),
+          ],
         ),
       ),
     );

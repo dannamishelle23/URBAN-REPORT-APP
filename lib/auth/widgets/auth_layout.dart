@@ -19,11 +19,11 @@ class AuthLayout extends StatelessWidget {
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF2196F3),
-              Color(0xFF64B5F6),
+              Color(0xFF0f172a),
+              Color(0xFF1e3a8a),
             ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: SafeArea(

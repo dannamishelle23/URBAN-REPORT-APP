@@ -30,8 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _logout() async {
     await Supabase.instance.client.auth.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/login');
+    // AuthGate se encarga de volver al Login
   }
 
   void _openProfile() {
