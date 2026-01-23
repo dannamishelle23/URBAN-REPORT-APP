@@ -34,11 +34,6 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  
   supabase_flutter: ^2.3.4        #Conectar a supabase
   flutter_dotenv: ^5.0.0          #Cargar variables de entorno
   flutter_map: ^6.1.0             #Mapas
@@ -46,6 +41,12 @@ dev_dependencies:
   geolocator: ^10.1.0             #Ubicacion del dispositivo
   image_picker: ^1.0.4            #Seleccionar imagenes de la galeria o camara
 
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_native_splash: ^2.4.0   #Pantalla de carga
+  
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -66,9 +67,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+  - assets/
   - .env
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -95,3 +95,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#0f172a"
+  image: assets/logo.png
+  android_12:
+    color: "#0f172a"
+    image: assets/logo.png

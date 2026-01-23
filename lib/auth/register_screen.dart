@@ -104,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
 
     _showMessage(
-      'Registro exitoso 🎉 Revisa tu correo para confirmar la cuenta',
+      'Registro exitoso! Revisa tu correo para confirmar la cuenta',
     );
 
     Navigator.pop(context);

@@ -24,8 +24,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<String> _titles = const [
     'Mis Reportes',
-    'Mapa',
-    'Nuevo Reporte',
+    'Mapa de Reportes Generales',
+    'Crear nuevo Reporte',
   ];
 
   void _logout() async {
@@ -45,8 +45,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
+        title: Text(
+          _titles[_currentIndex],
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF1e3a8a),
+        elevation: 2,
+        shadowColor: const Color(0xFF1e3a8a),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -56,24 +68,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _logout();
               }
             },
-            itemBuilder: (context) => const [
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            icon: const Icon(
+              Icons.more_vert,
+              color: Colors.white,
+              size: 28,
+            ),
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'profile',
                 child: Row(
-                  children: [
-                    Icon(Icons.person_outline),
-                    SizedBox(width: 8),
-                    Text('Mi perfil'),
+                  children: const [
+                    Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF1e3a8a),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Mi perfil',
+                      style: TextStyle(
+                        color: Color(0xFF1e3a8a),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
+              const PopupMenuDivider(height: 8),
               PopupMenuItem(
                 value: 'logout',
                 child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Cerrar sesión'),
+                  children: const [
+                    Icon(
+                      Icons.logout,
+                      color: Color(0xFFdc2626),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Cerrar sesión',
+                      style: TextStyle(
+                        color: Color(0xFFdc2626),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -87,6 +127,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF1e3a8a),
+        unselectedItemColor: const Color(0xFF94a3b8),
+        elevation: 8,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 11,
+        ),
         onTap: (index) {
           setState(() => _currentIndex = index);
         },

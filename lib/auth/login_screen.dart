@@ -35,11 +35,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       await _ensureProfile();
-      // AuthGate se encarga del redirect
-
+      // AuthGate maneja la navegación
     } on AuthException catch (e) {
       _showError(_mapAuthError(e.message));
-    } catch (e) {
+    } catch (_) {
       _showError('Error al iniciar sesión');
     } finally {
       setState(() => _loading = false);
@@ -50,7 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _ensureProfile() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     final profile = await supabase
@@ -74,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'Correo o contraseña incorrectos';
     }
     if (message.contains('Email not confirmed')) {
-      return 'Debes confirmar tu correo primero';
+      return 'Debes confirmar tu correo electrónico';
     }
     return message;
   }
@@ -97,18 +95,30 @@ class _LoginScreenState extends State<LoginScreen> {
         key: _formKey,
         child: Column(
           children: [
-            const Icon(
-              Icons.lock_outline,
-              size: 70,
-              color: Color(0xFF1e3a8a),
+            Image.asset(
+              'assets/logo.png', 
+              height: 90,
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 24),
 
             const Text(
-              'Iniciar sesión',
+              'Bienvenido/a',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
+                color: Color(0xFF0f172a),
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            Text(
+              'Inicia sesión para gestionar y visualizar tus reportes urbanos',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
               ),
             ),
 
@@ -163,18 +173,27 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: _login,
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const RegisterScreen(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('¿No tienes cuenta?'),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RegisterScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Crear una ahora',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                );
-              },
-              child: const Text('¿No tienes cuenta? Regístrate'),
+                ),
+              ],
             ),
           ],
         ),
