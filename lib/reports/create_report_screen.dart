@@ -232,20 +232,21 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       await _reportService.crearReporte(reporte);
 
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('✅ Éxito'),
-            content: const Text('Reporte creado exitosamente'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Cerrar diálogo
-                  Navigator.pop(context); // Cerrar pantalla
-                },
-                child: const Text('OK'),
-              ),
-            ],
+        // Limpiar el formulario
+        _tituloCtrl.clear();
+        _descripcionCtrl.clear();
+        setState(() {
+          _imagen = null;
+          _ubicacion = null;
+          _categoria = 'bache';
+        });
+        
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reporte creado exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
       }
