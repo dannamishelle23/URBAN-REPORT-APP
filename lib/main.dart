@@ -7,6 +7,7 @@ import 'auth/reset_password_screen.dart';
 import 'splash/splash_screen.dart';
 
 bool isManualLogin = false;
+String? pendingConfirmationMessage;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +53,6 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _showResetPassword = false;
-  String? _confirmationMessage;
 
   @override
   void initState() {
@@ -71,17 +71,12 @@ class _AuthGateState extends State<AuthGate> {
       
       if (event == AuthChangeEvent.signedIn) {
         if (!isManualLogin) {
+          pendingConfirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
           await Future.delayed(const Duration(seconds: 2));
           await Supabase.instance.client.auth.signOut();
-          if (mounted) {
-            setState(() {
-              _confirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
-            });
-          }
-        } else {
-          if (mounted) setState(() {});
         }
         isManualLogin = false;
+        if (mounted) setState(() {});
       }
       
       if (event == AuthChangeEvent.signedOut) {
@@ -99,7 +94,9 @@ class _AuthGateState extends State<AuthGate> {
     final session = Supabase.instance.client.auth.currentSession;
 
     if (session == null) {
-      return LoginScreen(confirmationMessage: _confirmationMessage);
+      final msg = pendingConfirmationMessage;
+      pendingConfirmationMessage = null;
+      return LoginScreen(confirmationMessage: msg);
     }
 
     return const DashboardScreen();

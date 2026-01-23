@@ -18,14 +18,15 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   late TextEditingController _descripcionCtrl;
 
   bool _loading = false;
-  bool _editMode = false; // Modo edicion desactivado por defecto
+  bool _editMode = false;
+  late String _estado;
 
   @override
   void initState() {
     super.initState();
     _tituloCtrl = TextEditingController(text: widget.reporte.titulo);
-    _descripcionCtrl =
-        TextEditingController(text: widget.reporte.descripcion);
+    _descripcionCtrl = TextEditingController(text: widget.reporte.descripcion);
+    _estado = widget.reporte.estado;
   }
 
   @override
@@ -50,9 +51,19 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     }
   }
 
+  Color _getColorByEstado(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'resuelto':
+        return const Color(0xFF10b981);
+      case 'pendiente':
+        return const Color(0xFFf59e0b);
+      default:
+        return const Color(0xFFf59e0b);
+    }
+  }
+
   Future<void> _guardarCambios() async {
-    if (_tituloCtrl.text.trim().isEmpty ||
-        _descripcionCtrl.text.trim().isEmpty) {
+    if (_tituloCtrl.text.trim().isEmpty || _descripcionCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Completa todos los campos'),
@@ -91,14 +102,62 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     }
   }
 
+  Future<void> _marcarComoResuelto() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Marcar como resuelto'),
+        content: const Text('¿Confirmas que este problema ya fue solucionado?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await _service.actualizarReporte(widget.reporte.id, {
+                  'estado': 'resuelto',
+                });
+                if (mounted) {
+                  Navigator.pop(context);
+                  setState(() => _estado = 'resuelto');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Reporte marcado como resuelto'),
+                      backgroundColor: Color(0xFF10b981),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: const Color(0xFFdc2626),
+                    ),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF10b981),
+            ),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _eliminar() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar reporte'),
-        content: const Text(
-          '¿Estás seguro de que deseas eliminar este reporte? Esta acción no se puede deshacer.',
-        ),
+        content: const Text('¿Estás seguro de que deseas eliminar este reporte? Esta acción no se puede deshacer.'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         actions: [
           TextButton(
@@ -110,8 +169,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               try {
                 await _service.eliminarReporte(widget.reporte.id);
                 if (mounted) {
-                  Navigator.pop(context); // Cerrar diálogo
-                  Navigator.pop(context); // Volver a lista
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Reporte eliminado'),
@@ -175,7 +234,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Foto
             if (widget.reporte.fotoUrl != null) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -203,22 +261,15 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Badges de categoría y estado
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color:
-                        _getColorByCategory(widget.reporte.categoria)
-                            .withOpacity(0.2),
+                    color: _getColorByCategory(widget.reporte.categoria).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color:
-                          _getColorByCategory(widget.reporte.categoria),
+                      color: _getColorByCategory(widget.reporte.categoria),
                       width: 1.5,
                     ),
                   ),
@@ -233,24 +284,21 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFf59e0b).withOpacity(0.2),
+                    color: _getColorByEstado(_estado).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: const Color(0xFFf59e0b),
+                      color: _getColorByEstado(_estado),
                       width: 1.5,
                     ),
                   ),
-                  child: const Text(
-                    'PENDIENTE',
+                  child: Text(
+                    _estado.toUpperCase(),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFf59e0b),
+                      color: _getColorByEstado(_estado),
                     ),
                   ),
                 ),
@@ -258,7 +306,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Título
             Text(
               'Título',
               style: TextStyle(
@@ -274,10 +321,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(
-                    color: Color(0xFFe2e8f0),
-                    width: 1.5,
-                  ),
+                  side: const BorderSide(color: Color(0xFFe2e8f0), width: 1.5),
                 ),
                 child: TextField(
                   controller: _tituloCtrl,
@@ -301,10 +345,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFFe2e8f0),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: const Color(0xFFe2e8f0), width: 1.5),
                 ),
                 child: Text(
                   widget.reporte.titulo,
@@ -317,7 +358,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               ),
             const SizedBox(height: 20),
 
-            // Descripción
             Text(
               'Descripción',
               style: TextStyle(
@@ -333,10 +373,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(
-                    color: Color(0xFFe2e8f0),
-                    width: 1.5,
-                  ),
+                  side: const BorderSide(color: Color(0xFFe2e8f0), width: 1.5),
                 ),
                 child: TextField(
                   controller: _descripcionCtrl,
@@ -361,10 +398,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFFe2e8f0),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: const Color(0xFFe2e8f0), width: 1.5),
                 ),
                 child: Text(
                   widget.reporte.descripcion,
@@ -377,7 +411,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               ),
             const SizedBox(height: 32),
 
-            // Botones
             if (_editMode)
               Row(
                 children: [
@@ -391,13 +424,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         });
                       },
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFF1e3a8a),
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        side: const BorderSide(color: Color(0xFF1e3a8a), width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: const Text(
@@ -418,9 +446,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         backgroundColor: const Color(0xFF1e3a8a),
                         disabledBackgroundColor: const Color(0xFF94a3b8),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       child: _loading
                           ? const SizedBox(
@@ -428,43 +454,60 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(
                               'Guardar cambios',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),
                 ],
               )
             else
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => setState(() => _editMode = true),
-                  icon: const Icon(Icons.edit),
-                  label: const Text(
-                    'Editar reporte',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+              Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => setState(() => _editMode = true),
+                      icon: const Icon(Icons.edit),
+                      label: const Text(
+                        'Editar reporte',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF1e3a8a),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1e3a8a),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  if (_estado != 'resuelto') ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _marcarComoResuelto,
+                        icon: const Icon(Icons.check_circle_outline, color: Color(0xFF10b981)),
+                        label: const Text(
+                          'Marcar como resuelto',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10b981),
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF10b981), width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  ],
+                ],
               ),
           ],
         ),

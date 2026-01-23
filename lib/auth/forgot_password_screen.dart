@@ -53,12 +53,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       );
 
       _showMessage(
-        'Te enviamos un correo para restablecer tu contraseña 📩',
+        'Se ha enviado un correo electrónico para restablecer la contraseña.',
       );
 
       Navigator.pop(context);
     } catch (e) {
-      _showError('No se pudo enviar el correo');
+      _showError('Error: $e');
     } finally {
       setState(() => _loading = false);
     }
