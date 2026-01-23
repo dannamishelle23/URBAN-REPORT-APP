@@ -30,6 +30,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   LatLng? _ubicacion;
   File? _imagen;
   bool _loading = false;
+  String? _errorMessage; // Para mostrar errores en la UI
 
   @override
   void initState() {
@@ -207,7 +208,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       return;
     }
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorMessage = null; // Limpiar error anterior
+    });
 
     try {
       final imageUrl = await _storageService.uploadImage(_imagen!, user.id);
@@ -246,31 +250,15 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         );
       }
     } catch (e) {
-      debugPrint('ERROR AL GUARDAR REPORTE: $e');
+      final errorStr = e.toString();
       if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Error al Guardar'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: SingleChildScrollView(
-                child: SelectableText(
-                  e.toString(),
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cerrar'),
-              ),
-            ],
+        setState(() => _errorMessage = errorStr);
+        // Mostrar SnackBar como notificación adicional
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Error al guardar. Ver detalles abajo.'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -571,6 +559,54 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ),
 
               const SizedBox(height: 32),
+
+              // Mostrar error si existe
+              if (_errorMessage != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.error, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Error al guardar:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () => setState(() => _errorMessage = null),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 10,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
 
               // Botón Guardar
               SizedBox(
