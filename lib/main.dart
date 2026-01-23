@@ -6,7 +6,6 @@ import 'auth/login_screen.dart';
 import 'auth/reset_password_screen.dart';
 import 'splash/splash_screen.dart';
 
-// Variable global para saber si el login fue manual
 bool isManualLogin = false;
 
 void main() async {
@@ -62,28 +61,33 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _setupAuthListener() {
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-    final event = data.event;
-    
-    if (event == AuthChangeEvent.passwordRecovery) {
-      setState(() => _showResetPassword = true);
-      return;
-    }
-    
-    if (event == AuthChangeEvent.signedIn) {
-      if (!isManualLogin) {
-        // Esperar a que Supabase complete la confirmación
-        await Future.delayed(const Duration(seconds: 2));
-        await Supabase.instance.client.auth.signOut();
-        if (mounted) {
-          setState(() {
-            _confirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
-          });
-        }
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final event = data.event;
+      
+      if (event == AuthChangeEvent.passwordRecovery) {
+        setState(() => _showResetPassword = true);
+        return;
       }
-      isManualLogin = false;
-    }
-  });
+      
+      if (event == AuthChangeEvent.signedIn) {
+        if (!isManualLogin) {
+          await Future.delayed(const Duration(seconds: 2));
+          await Supabase.instance.client.auth.signOut();
+          if (mounted) {
+            setState(() {
+              _confirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
+            });
+          }
+        } else {
+          if (mounted) setState(() {});
+        }
+        isManualLogin = false;
+      }
+      
+      if (event == AuthChangeEvent.signedOut) {
+        if (mounted) setState(() {});
+      }
+    });
   }
 
   @override
