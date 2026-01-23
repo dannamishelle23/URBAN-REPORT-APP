@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../main.dart';
 import 'auth_service.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -9,7 +10,9 @@ import 'widgets/auth_input.dart';
 import 'widgets/auth_layout.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? confirmationMessage;
+  
+  const LoginScreen({super.key, this.confirmationMessage});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -24,11 +27,28 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _obscurePassword = true;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.confirmationMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.confirmationMessage!),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    });
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
       setState(() => _loading = true);
+
+      isManualLogin = true;
 
       await _authService.login(
         email: _emailCtrl.text.trim(),
@@ -36,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       await _ensureProfile();
-      // AuthGate maneja la navegación
     } on AuthException catch (e) {
       _showError(_mapAuthError(e.message));
     } catch (_) {
@@ -46,7 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Crea el perfil SOLO si no existe
   Future<void> _ensureProfile() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;

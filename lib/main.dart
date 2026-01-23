@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dashboard/dashboard_screen.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-// ignore: depend_on_referenced_packages
 import 'package:supabase_flutter/supabase_flutter.dart';
-// Auth
 import 'auth/login_screen.dart';
 import 'auth/reset_password_screen.dart';
-// Splash
 import 'splash/splash_screen.dart';
+
+// Variable global para saber si el login fue manual
+bool isManualLogin = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +53,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _showResetPassword = false;
+  String? _confirmationMessage;
 
   @override
   void initState() {
@@ -67,24 +67,21 @@ class _AuthGateState extends State<AuthGate> {
       
       if (event == AuthChangeEvent.passwordRecovery) {
         setState(() => _showResetPassword = true);
+        return;
       }
       
-      // Cuando el usuario confirma email, cerrar sesion para que haga login manual
       if (event == AuthChangeEvent.signedIn) {
-        final user = data.session?.user;
-        if (user != null) {
-          // Verificar si el perfil existe
-          final profile = await Supabase.instance.client
-              .from('profiles')
-              .select('id')
-              .eq('id', user.id)
-              .maybeSingle();
-          
-          // Si no existe el perfil, cerrar sesion para que haga login manual
-          if (profile == null) {
-            await Supabase.instance.client.auth.signOut();
+        // Si NO fue login manual, viene de confirmacion de email
+        if (!isManualLogin) {
+          await Supabase.instance.client.auth.signOut();
+          if (mounted) {
+            setState(() {
+              _confirmationMessage = 'Cuenta confirmada. Por favor inicia sesion.';
+            });
           }
         }
+        // Resetear la variable
+        isManualLogin = false;
       }
     });
   }
@@ -95,23 +92,12 @@ class _AuthGateState extends State<AuthGate> {
       return const ResetPasswordScreen();
     }
 
-    return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        final session = Supabase.instance.client.auth.currentSession;
+    final session = Supabase.instance.client.auth.currentSession;
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    if (session == null) {
+      return LoginScreen(confirmationMessage: _confirmationMessage);
+    }
 
-        if (session == null) {
-          return const LoginScreen();
-        }
-
-        return const DashboardScreen();
-      },
-    );
+    return const DashboardScreen();
   }
 }
