@@ -42,8 +42,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           FilledButton(
             onPressed: () async {
+              Navigator.pop(context); // Cerrar dialogo primero
               await Supabase.instance.client.auth.signOut();
-              if (mounted) Navigator.pop(context);
+              // AuthGate se encarga de navegar al login automaticamente
             },
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFdc2626),

@@ -18,6 +18,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   late TextEditingController _descripcionCtrl;
 
   bool _loading = false;
+  bool _editMode = false; // Modo edicion desactivado por defecto
 
   @override
   void initState() {
@@ -156,6 +157,12 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           fontWeight: FontWeight.bold,
         ),
         actions: [
+          if (!_editMode)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => setState(() => _editMode = true),
+              tooltip: 'Editar reporte',
+            ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: _eliminar,
@@ -262,31 +269,52 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(
-                  color: Color(0xFFe2e8f0),
-                  width: 1.5,
+            if (_editMode)
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(
+                    color: Color(0xFFe2e8f0),
+                    width: 1.5,
+                  ),
+                ),
+                child: TextField(
+                  controller: _tituloCtrl,
+                  decoration: const InputDecoration(
+                    hintText: 'Título del reporte',
+                    hintStyle: TextStyle(color: Color(0xFFcbd5e1)),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16),
+                  ),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1e3a8a),
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFe2e8f0),
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  widget.reporte.titulo,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1e3a8a),
+                  ),
                 ),
               ),
-              child: TextField(
-                controller: _tituloCtrl,
-                decoration: InputDecoration(
-                  hintText: 'Título del reporte',
-                  hintStyle:
-                      const TextStyle(color: Color(0xFFcbd5e1)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1e3a8a),
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
 
             // Descripción
@@ -300,96 +328,144 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(
-                  color: Color(0xFFe2e8f0),
-                  width: 1.5,
+            if (_editMode)
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(
+                    color: Color(0xFFe2e8f0),
+                    width: 1.5,
+                  ),
+                ),
+                child: TextField(
+                  controller: _descripcionCtrl,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    hintText: 'Describe el problema',
+                    hintStyle: TextStyle(color: Color(0xFFcbd5e1)),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16),
+                  ),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF475569),
+                    height: 1.6,
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFe2e8f0),
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  widget.reporte.descripcion,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF475569),
+                    height: 1.6,
+                  ),
                 ),
               ),
-              child: TextField(
-                controller: _descripcionCtrl,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  hintText: 'Describe el problema',
-                  hintStyle:
-                      const TextStyle(color: Color(0xFFcbd5e1)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF475569),
-                  height: 1.6,
-                ),
-              ),
-            ),
             const SizedBox(height: 32),
 
             // Botones
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        color: Color(0xFF1e3a8a),
-                        width: 1.5,
+            if (_editMode)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _editMode = false;
+                          _tituloCtrl.text = widget.reporte.titulo;
+                          _descripcionCtrl.text = widget.reporte.descripcion;
+                        });
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: Color(0xFF1e3a8a),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1e3a8a),
+                      child: const Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1e3a8a),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _loading ? null : _guardarCambios,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF1e3a8a),
-                      disabledBackgroundColor:
-                          const Color(0xFF94a3b8),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _loading ? null : _guardarCambios,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF1e3a8a),
+                        disabledBackgroundColor: const Color(0xFF94a3b8),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                    ),
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                      child: _loading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'Guardar cambios',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          )
-                        : const Text(
-                            'Guardar cambios',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => setState(() => _editMode = true),
+                  icon: const Icon(Icons.edit),
+                  label: const Text(
+                    'Editar reporte',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF1e3a8a),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
           ],
         ),
       ),

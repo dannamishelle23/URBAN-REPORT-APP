@@ -120,10 +120,17 @@ class _RegisterScreenState extends State<RegisterScreen>
 }
 
   void _handleAuthError(String message) {
-    if (message.contains('already registered')) {
+    final lowerMessage = message.toLowerCase();
+    if (lowerMessage.contains('already registered') ||
+        lowerMessage.contains('user already registered') ||
+        lowerMessage.contains('email already') ||
+        lowerMessage.contains('already exists')) {
       _showError('Este correo ya está registrado');
-    } else if (message.contains('Password should be')) {
+    } else if (lowerMessage.contains('password should be') ||
+        lowerMessage.contains('password is too weak')) {
       _showError('La contraseña es muy débil');
+    } else if (lowerMessage.contains('invalid email')) {
+      _showError('El correo electrónico no es válido');
     } else {
       _showError(message);
     }
