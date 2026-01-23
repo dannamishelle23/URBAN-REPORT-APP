@@ -20,6 +20,21 @@ class _MapGeneralScreenState extends State<MapGeneralScreen> {
   bool _loading = true;
   List<Reporte> _reportes = [];
 
+  Color _getColorByCategory(String categoria) {
+    switch (categoria) {
+      case 'bache':
+        return Colors.orange;
+      case 'luminaria':
+        return Colors.yellow;
+      case 'basura':
+        return Colors.green;
+      case 'alcantarilla':
+        return Colors.blue;
+      default:
+        return Colors.red;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -108,6 +123,12 @@ class _MapGeneralScreenState extends State<MapGeneralScreen> {
       appBar: AppBar(title: const Text('Mapa de Reportes')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _reportes.isEmpty
+              ? const Center(
+                child: Text('No hay reportes pendientes para mostrar.',
+                style: TextStyle(fontSize: 16),
+                ),
+              )
           : FlutterMap(
               options: MapOptions(
                 initialCenter: _userLocation,
@@ -145,9 +166,10 @@ class _MapGeneralScreenState extends State<MapGeneralScreen> {
                       height: 40,
                       child: GestureDetector(
                         onTap: () => _showReporteDetalle(reporte),
-                        child: const Icon(
+                        child: Icon(
                           Icons.location_pin,
-                          color: Colors.red,
+                          //Colores por categoría
+                          color: _getColorByCategory(reporte.categoria),
                           size: 40,
                         ),
                       ),
