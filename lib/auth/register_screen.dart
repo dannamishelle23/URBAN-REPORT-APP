@@ -15,6 +15,8 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
@@ -55,6 +57,15 @@ class _RegisterScreenState extends State<RegisterScreen>
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),
       );
+
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client.from('profiles').insert({
+        'id': user!.id,
+        'email': user.email,
+        'full_name': _nameCtrl.text.trim(),
+        'telefono': _phoneCtrl.text.trim(),
+      });
 
       _showMessage(
         'Registro exitoso 🎉 Revisa tu correo para confirmar la cuenta',
@@ -134,7 +145,31 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
 
               const SizedBox(height: 32),
+              AuthInput(
+                controller: _nameCtrl,
+                label: 'Nombre completo',
+                prefixIcon: Icons.person_outline,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Ingrese su nombre';
+                  }
+                  return null;
+                },
+              ),
 
+              AuthInput(
+                controller: _phoneCtrl,
+                label: 'Teléfono',
+                prefixIcon: Icons.phone,
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Ingrese su teléfono';
+                  }
+                  return null;
+                },
+              ),
+              
               AuthInput(
                 controller: _emailCtrl,
                 label: 'Correo electrónico',
