@@ -247,10 +247,44 @@ class _ReportListScreenState extends State<ReportListScreen> {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color: const Color(0xFF3b82f6),
-                                    size: 20,
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1e3a8a),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.edit,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Editar',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        color: const Color(0xFF3b82f6),
+                                        size: 20,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
