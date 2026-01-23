@@ -56,7 +56,7 @@ class StorageService {
 
       // PASO 4: Subir al bucket "imagenes"
       debugInfo += 'PASO 4: Subiendo a bucket "imagenes"...\n';
-      await _supabase.storage.from('imagenes').uploadBinary(
+      await _supabase.storage.from('IMAGENES').uploadBinary(
             fileName,
             bytes,
             fileOptions: FileOptions(
@@ -67,7 +67,7 @@ class StorageService {
 
       // PASO 5: Obtener URL pública
       debugInfo += 'PASO 5: Obteniendo URL pública...\n';
-      final publicUrl = _supabase.storage.from('imagenes').getPublicUrl(fileName);
+      final publicUrl = _supabase.storage.from('IMAGENES').getPublicUrl(fileName);
       debugInfo += 'URL: $publicUrl\n';
 
       return publicUrl;
@@ -104,7 +104,7 @@ class StorageService {
   Future<void> deleteImage(String fileUrl) async {
     try {
       final fileName = Uri.parse(fileUrl).pathSegments.last;
-      await _supabase.storage.from('imagenes').remove([fileName]);
+      await _supabase.storage.from('IMAGENES').remove([fileName]);
     } catch (e) {
       throw Exception('Error al eliminar imagen: $e');
     }
