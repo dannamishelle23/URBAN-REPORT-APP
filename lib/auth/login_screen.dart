@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
                 child: const Text(
-                  'Olvide mi contrasena',
+                  'Olvide mi contraseña',
                   style: TextStyle(
                     color: Color(0xFF1e3a8a),
                     fontWeight: FontWeight.w500,
