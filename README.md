@@ -15,38 +15,38 @@ Geolocator - Ubicacion del dispositivo
 
 # Estructura del Proyecto
 lib/
-├── auth/                    # Autenticacion (login, registro, recuperar contrasena)
-│   ├── login_screen.dart
-│   ├── register_screen.dart
-│   ├── forgot_password_screen.dart
-│   └── auth_service.dart
-├── dashboard/               # Pantalla principal con navegacion
-│   └── dashboard_screen.dart
-├── reports/                 # CRUD de reportes
-│   ├── create_report_screen.dart
-│   ├── report_list_screen.dart
-│   └── report_detail_screen.dart
-├── map/                     # Mapas
-│   ├── map_general_screen.dart
-│   └── map_picker_screen.dart
-├── profile/                 # Perfil de usuario
-│   └── profile_screen.dart
-├── splash/                  # Pantalla de carga inicial
-│   └── splash_screen.dart
-├── services/                # Servicios
-│   ├── report_service.dart
-│   └── storage_service.dart
-├── models/                  # Modelos de datos
-│   └── reporte.dart
-└── main.dart
+- ├── auth/                    # Autenticacion (login, registro, recuperar contrasena)
+- │   ├── login_screen.dart
+- │   ├── register_screen.dart
+- │   ├── forgot_password_screen.dart
+- │   └── auth_service.dart
+- ├── dashboard/               # Pantalla principal con navegacion
+- │   └── dashboard_screen.dart
+- ├── reports/                 # CRUD de reportes
+- │   ├── create_report_screen.dart
+- │   ├── report_list_screen.dart
+- │   └── report_detail_screen.dart
+- ├── map/                     # Mapas
+- │   ├── map_general_screen.dart
+- │   └── map_picker_screen.dart
+- ├── profile/                 # Perfil de usuario
+- │   └── profile_screen.dart
+- ├── splash/                  # Pantalla de carga inicial
+- │   └── splash_screen.dart
+- ├── services/                # Servicios
+- │   ├── report_service.dart
+- │   └── storage_service.dart
+- ├── models/                  # Modelos de datos
+- │   └── reporte.dart
+- └── main.dart
 Dependencias
 dependencies:
-  supabase_flutter: ^2.3.4    # Conexion a Supabase
-  flutter_dotenv: ^5.0.0      # Variables de entorno
-  flutter_map: ^6.1.0         # Mapas
-  latlong2: ^0.9.0            # Coordenadas para flutter_map
-  geolocator: ^10.1.0         # Ubicacion del dispositivo
-  image_picker: ^1.0.4        # Seleccionar imagenes de camara o galeria
+  - supabase_flutter: ^2.3.4    # Conexion a Supabase
+  - flutter_dotenv: ^5.0.0      # Variables de entorno
+  - flutter_map: ^6.1.0         # Mapas
+  - latlong2: ^0.9.0            # Coordenadas para flutter_map
+  - geolocator: ^10.1.0         # Ubicacion del dispositivo
+  - image_picker: ^1.0.4        # Seleccionar imagenes de camara o galeria
 
 # Configuracion
 Crear archivo .env en la raiz del proyecto:
