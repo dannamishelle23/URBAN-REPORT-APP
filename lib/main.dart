@@ -6,6 +6,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // Auth
 import 'auth/login_screen.dart';
+// Splash
+import 'splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +35,7 @@ class MyApp extends StatelessWidget {
           fillColor: Colors.grey.shade100,
         ),
       ),
-      home: const AuthGate(),
+      home: SplashScreen(nextScreen: const AuthGate()),
     );
   }
 }

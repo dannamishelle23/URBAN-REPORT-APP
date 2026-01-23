@@ -16,11 +16,23 @@ class AuthService {
   Future<void> register({
     required String email,
     required String password,
+    String? fullName,
+    String? telefono,
   }) async {
-    await _supabase.auth.signUp(
+    final response = await _supabase.auth.signUp(
       email: email,
       password: password,
     );
+
+    // Guardar nombre y teléfono en la tabla profiles
+    if (response.user != null && (fullName != null || telefono != null)) {
+      await _supabase.from('profiles').upsert({
+        'id': response.user!.id,
+        'email': email,
+        'full_name': fullName,
+        'telefono': telefono,
+      });
+    }
   }
 
   Future<void> resetPassword(String email) async {

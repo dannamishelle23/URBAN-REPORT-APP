@@ -52,7 +52,9 @@ class _MapGeneralScreenState extends State<MapGeneralScreen> {
 
   Future<void> _loadReportes() async {
     try {
-      final data = await _reportService.getMisReportes();
+      // Cargar TODOS los reportes de todos los usuarios (no solo los míos)
+      final data = await _reportService.getTodosLosReportes();
+      // Filtrar solo los que no están resueltos
       _reportes = data.where((r) => r.estado != 'resuelto').toList();
     } catch (e) {
       debugPrint('Error cargando reportes: $e');

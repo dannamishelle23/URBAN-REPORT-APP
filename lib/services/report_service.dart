@@ -23,6 +23,18 @@ class ReportService {
         .toList();
   }
 
+  /// Obtener TODOS los reportes (para el mapa general)
+  Future<List<Reporte>> getTodosLosReportes() async {
+    final response = await _supabase
+        .from('reportes')
+        .select()
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((item) => Reporte.fromMap(item))
+        .toList();
+  }
+
   /// Crear nuevo reporte
   Future<void> crearReporte(Reporte reporte) async {
     await _supabase.from('reportes').insert(reporte.toMap());

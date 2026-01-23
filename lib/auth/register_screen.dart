@@ -101,6 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     await _authService.register(
       email: email,
       password: _passwordCtrl.text.trim(),
+      fullName: _nameCtrl.text.trim(),
+      telefono: _phoneCtrl.text.trim(),
     );
 
     _showMessage(

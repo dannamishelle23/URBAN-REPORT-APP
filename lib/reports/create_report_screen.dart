@@ -406,6 +406,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                         child: Text('🗑️ Basura'),
                       ),
                       DropdownMenuItem(
+                        value: 'alcantarilla',
+                        child: Text('🚰 Alcantarilla'),
+                      ),
+                      DropdownMenuItem(
                         value: 'otro',
                         child: Text('📍 Otro'),
                       ),
