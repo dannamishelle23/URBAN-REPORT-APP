@@ -59,11 +59,12 @@ class _LoginScreenState extends State<LoginScreen> {
         .maybeSingle();
 
     if (profile == null) {
+      final metadata = user.userMetadata;
       await supabase.from('profiles').insert({
         'id': user.id,
         'email': user.email,
-        'full_name': '',
-        'telefono': '',
+        'full_name': metadata?['full_name'] ?? '',
+        'telefono': metadata?['telefono'] ?? '',
       });
     }
   }

@@ -19,20 +19,14 @@ class AuthService {
     String? fullName,
     String? telefono,
   }) async {
-    final response = await _supabase.auth.signUp(
+    await _supabase.auth.signUp(
       email: email,
       password: password,
-    );
-
-    // Guardar nombre y teléfono en la tabla profiles
-    if (response.user != null && (fullName != null || telefono != null)) {
-      await _supabase.from('profiles').upsert({
-        'id': response.user!.id,
-        'email': email,
+      data: {
         'full_name': fullName,
         'telefono': telefono,
-      });
-    }
+      },
+    );
   }
 
   Future<void> resetPassword(String email) async {

@@ -30,73 +30,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   LatLng? _ubicacion;
   File? _imagen;
   bool _loading = false;
-  String? _errorMessage; // Para mostrar errores en la UI
-
-  @override
-  void initState() {
-    super.initState();
-    _mostrarDiagnostico();
-  }
-
-  Future<void> _mostrarDiagnostico() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    if (!mounted) return;
-    
-    String diagnostico = '';
-    bool hayError = false;
-    
-    try {
-      // Verificar conexión a Supabase
-      diagnostico += 'Verificando conexión a Supabase...\n';
-      final user = Supabase.instance.client.auth.currentUser;
-      diagnostico += 'Usuario: ${user?.email ?? "No autenticado"}\n';
-      diagnostico += 'User ID: ${user?.id ?? "N/A"}\n\n';
-      
-      // Intentar listar buckets
-      diagnostico += 'Intentando listar buckets...\n';
-      try {
-        final buckets = await Supabase.instance.client.storage.listBuckets();
-        if (buckets.isEmpty) {
-          diagnostico += 'Lista vacía (normal con anon key)\n';
-        } else {
-          final nombres = buckets.map((b) => b.name).join(', ');
-          diagnostico += 'Buckets: $nombres\n';
-        }
-      } catch (e) {
-        diagnostico += 'No se pudo listar buckets: $e\n';
-        diagnostico += '(Esto es normal con anon key)\n';
-      }
-      
-      diagnostico += '\nEl bucket "imagenes" debe existir en Supabase.';
-      
-    } catch (e) {
-      hayError = true;
-      diagnostico += '\nError general: $e';
-    }
-    
-    if (!mounted) return;
-    
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        title: Text(hayError ? 'Error de Diagnóstico' : 'Diagnóstico'),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            diagnostico,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _pickImage() async {
     showModalBottomSheet(
@@ -144,7 +77,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ListTile(
                 leading: const Icon(Icons.photo, color: Color(0xFF1e3a8a)),
                 title: const Text(
-                  'Elegir de galería',
+                  'Elegir de galeria',
                   style: TextStyle(
                     color: Color(0xFF1e3a8a),
                     fontWeight: FontWeight.w500,
@@ -173,17 +106,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_ubicacion == null || _imagen == null) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('❌ Error'),
-          content: const Text('Debe seleccionar ubicación e imagen'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debe seleccionar ubicacion e imagen'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -192,26 +118,16 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     
     if (user == null) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('❌ Error'),
-          content: const Text('Usuario no autenticado'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Usuario no autenticado'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    setState(() {
-      _loading = true;
-      _errorMessage = null; // Limpiar error anterior
-    });
+    setState(() => _loading = true);
 
     try {
       final imageUrl = await _storageService.uploadImage(_imagen!, user.id);
@@ -232,7 +148,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       await _reportService.crearReporte(reporte);
 
       if (mounted) {
-        // Limpiar el formulario
         _tituloCtrl.clear();
         _descripcionCtrl.clear();
         setState(() {
@@ -241,7 +156,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
           _categoria = 'bache';
         });
         
-        // Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Reporte creado exitosamente'),
@@ -251,15 +165,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         );
       }
     } catch (e) {
-      final errorStr = e.toString();
       if (mounted) {
-        setState(() => _errorMessage = errorStr);
-        // Mostrar SnackBar como notificación adicional
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Error al guardar. Ver detalles abajo.'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -283,7 +193,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Título
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -301,7 +210,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: const InputDecoration(
-                    labelText: 'Título del reporte',
+                    labelText: 'Titulo del reporte',
                     labelStyle: TextStyle(
                       color: Color(0xFF1e3a8a),
                       fontWeight: FontWeight.w600,
@@ -321,12 +230,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     fillColor: Color(0xFFF8FAFC),
                   ),
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Ingrese un título' : null,
+                      v == null || v.isEmpty ? 'Ingrese un titulo' : null,
                 ),
               ),
               const SizedBox(height: 18),
 
-              // Descripción
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -345,7 +253,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: const InputDecoration(
-                    labelText: 'Descripción detallada',
+                    labelText: 'Descripcion detallada',
                     labelStyle: TextStyle(
                       color: Color(0xFF1e3a8a),
                       fontWeight: FontWeight.w600,
@@ -367,13 +275,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   ),
                   validator: (v) =>
                       v == null || v.isEmpty
-                          ? 'Ingrese una descripción'
+                          ? 'Ingrese una descripcion'
                           : null,
                 ),
               ),
               const SizedBox(height: 18),
 
-              // Categoría
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -395,28 +302,28 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     items: const [
                       DropdownMenuItem(
                         value: 'bache',
-                        child: Text('🕳️ Bache'),
+                        child: Text('Bache'),
                       ),
                       DropdownMenuItem(
                         value: 'luminaria',
-                        child: Text('💡 Luminaria'),
+                        child: Text('Luminaria'),
                       ),
                       DropdownMenuItem(
                         value: 'basura',
-                        child: Text('🗑️ Basura'),
+                        child: Text('Basura'),
                       ),
                       DropdownMenuItem(
                         value: 'alcantarilla',
-                        child: Text('🚰 Alcantarilla'),
+                        child: Text('Alcantarilla'),
                       ),
                       DropdownMenuItem(
                         value: 'otro',
-                        child: Text('📍 Otro'),
+                        child: Text('Otro'),
                       ),
                     ],
                     onChanged: (v) => setState(() => _categoria = v!),
                     decoration: const InputDecoration(
-                      labelText: 'Categoría',
+                      labelText: 'Categoria',
                       labelStyle: TextStyle(
                         color: Color(0xFF1e3a8a),
                         fontWeight: FontWeight.w600,
@@ -438,7 +345,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Imagen
               const Text(
                 'Foto del problema',
                 style: TextStyle(
@@ -512,9 +418,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
               const SizedBox(height: 24),
 
-              // Ubicación
               const Text(
-                'Ubicación del problema',
+                'Ubicacion del problema',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -532,8 +437,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   ),
                   label: Text(
                     _ubicacion == null
-                        ? 'Seleccionar ubicación'
-                        : '✓ Ubicación seleccionada',
+                        ? 'Seleccionar ubicacion'
+                        : 'Ubicacion seleccionada',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -565,55 +470,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
               const SizedBox(height: 32),
 
-              // Mostrar error si existe
-              if (_errorMessage != null) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.error, color: Colors.red, size: 20),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Error al guardar:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(Icons.close, size: 18),
-                            onPressed: () => setState(() => _errorMessage = null),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        _errorMessage!,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 10,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Botón Guardar
               SizedBox(
                 width: double.infinity,
                 height: 56,
