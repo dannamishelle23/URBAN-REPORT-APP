@@ -31,6 +31,61 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   File? _imagen;
   bool _loading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _mostrarDiagnostico();
+  }
+
+  Future<void> _mostrarDiagnostico() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    try {
+      final buckets = await Supabase.instance.client.storage.listBuckets();
+      final nombres = buckets.map((b) => b.name).join(', ');
+      
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('✅ Diagnóstico'),
+          content: SelectableText(
+            'Conectado a Supabase\n\nBuckets encontrados:\n$nombres',
+            style: const TextStyle(fontFamily: 'monospace'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('❌ Error'),
+          content: SelectableText(
+            'Error al conectar:\n\n$e',
+            style: const TextStyle(fontFamily: 'monospace'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Future<void> _pickImage() async {
     showModalBottomSheet(
       context: context,
@@ -106,21 +161,45 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_ubicacion == null || _imagen == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seleccione ubicación e imagen'),
-          backgroundColor: Colors.red,
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('❌ Error'),
+          content: const Text('Debe seleccionar ubicación e imagen'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
       return;
     }
 
-    final user = Supabase.instance.client.auth.currentUser!;
+    final user = Supabase.instance.client.auth.currentUser;
+    
+    if (user == null) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('❌ Error'),
+          content: const Text('Usuario no autenticado'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
-      final imageUrl =
-          await _storageService.uploadImage(_imagen!, user.id);
+      final imageUrl = await _storageService.uploadImage(_imagen!, user.id);
 
       final reporte = Reporte(
         id: '',
@@ -137,17 +216,51 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
       await _reportService.crearReporte(reporte);
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('✅ Éxito'),
+            content: const Text('Reporte creado exitosamente'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cerrar diálogo
+                  Navigator.pop(context); // Cerrar pantalla
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: const Color(0xFFdc2626),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('❌ ERROR COMPLETO'),
+            content: SingleChildScrollView(
+              child: SelectableText(
+                e.toString(),
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+        );
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -155,6 +268,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Crear Reporte'),
+        backgroundColor: const Color(0xFF1e3a8a),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Form(
@@ -312,13 +430,13 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Imagen - Botón Grande
-              Text(
+              // Imagen
+              const Text(
                 'Foto del problema',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1e3a8a),
+                  color: Color(0xFF1e3a8a),
                 ),
               ),
               const SizedBox(height: 12),
@@ -327,7 +445,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 GestureDetector(
                   onTap: _pickImage,
                   child: Container(
-                    height: 280,
+                    height: 200,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
@@ -336,136 +454,63 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                       ),
                       color: const Color(0xFFF0F4FF),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF3b82f6).withOpacity(0.15),
-                          ),
-                          child: const Icon(
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
                             Icons.camera_alt,
-                            size: 72,
+                            size: 60,
                             color: Color(0xFF1e3a8a),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Cargue su foto',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1e3a8a),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: const Text(
-                            'Toque para tomar una foto\no elegir de su galería',
-                            textAlign: TextAlign.center,
+                          SizedBox(height: 16),
+                          Text(
+                            'Toque para agregar foto',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF94a3b8),
-                              height: 1.5,
+                              fontSize: 16,
+                              color: Color(0xFF1e3a8a),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 )
               else
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.file(
-                          _imagen!,
-                          height: 280,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.file(
+                        _imagen!,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        onPressed: _pickImage,
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF1e3a8a),
                         ),
                       ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF1e3a8a),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.edit,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.8),
-                              ],
-                            ),
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF10b981),
-                                size: 22,
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                'Foto cargada',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
               const SizedBox(height: 24),
 
               // Ubicación
-              Text(
+              const Text(
                 'Ubicación del problema',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1e3a8a),
+                  color: Color(0xFF1e3a8a),
                 ),
               ),
               const SizedBox(height: 12),
@@ -476,11 +521,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   icon: const Icon(
                     Icons.location_on,
                     color: Color(0xFF1e3a8a),
-                    size: 22,
                   ),
                   label: Text(
                     _ubicacion == null
-                        ? 'Seleccionar ubicación en mapa'
+                        ? 'Seleccionar ubicación'
                         : '✓ Ubicación seleccionada',
                     style: const TextStyle(
                       fontSize: 15,
@@ -517,37 +561,24 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: _loading ? null : _guardar,
-                  icon: _loading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Icon(Icons.check),
-                  label: Text(
-                    _loading ? 'Guardando...' : 'Guardar Reporte',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1e3a8a),
-                    disabledBackgroundColor: const Color(0xFF94a3b8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    elevation: 6,
-                    shadowColor: const Color(0xFF1e3a8a),
                   ),
+                  child: _loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Guardar Reporte',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -555,5 +586,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _tituloCtrl.dispose();
+    _descripcionCtrl.dispose();
+    super.dispose();
   }
 }

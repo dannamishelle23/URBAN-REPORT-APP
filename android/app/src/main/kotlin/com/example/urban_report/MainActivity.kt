@@ -1,4 +1,4 @@
-package com.example.urban_report
+package com.urbanreport
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.urban_report"
+    namespace = "com.urbanreport"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

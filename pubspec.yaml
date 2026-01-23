@@ -40,12 +40,14 @@ dependencies:
   latlong2: ^0.9.0                #Coordenadas para flutter_map
   geolocator: ^10.1.0             #Ubicacion del dispositivo
   image_picker: ^1.0.4            #Seleccionar imagenes de la galeria o camara
+  path: ^1.8.3                    #Manejo de rutas de archivos
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   
   flutter_native_splash: ^2.4.0   #Pantalla de carga
+  flutter_launcher_icons: ^0.13.1 #Icono de la app 
   
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -102,3 +104,12 @@ flutter_native_splash:
   android_12:
     color: "#0f172a"
     image: assets/logo.png
+  android_gravity: center
+  ios_content_mode: scaleAspectFill
+
+flutter_icons: 
+  android: true
+  ios: true
+  image_path: "assets/icon.jpg"
+
+  min_sdk_android: 21

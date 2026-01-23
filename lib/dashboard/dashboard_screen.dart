@@ -24,13 +24,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<String> _titles = const [
     'Mis Reportes',
-    'Mapa de Reportes Generales',
-    'Crear nuevo Reporte',
+    'Mapa de Reportes',
+    'Crear Reporte',
   ];
 
   void _logout() async {
-    await Supabase.instance.client.auth.signOut();
-    // AuthGate se encarga de volver al Login
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (mounted) Navigator.pop(context);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFdc2626),
+            ),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openProfile() {
@@ -60,70 +82,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
         shadowColor: const Color(0xFF1e3a8a),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'profile') {
-                _openProfile();
-              } else if (value == 'logout') {
-                _logout();
-              }
-            },
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            icon: const Icon(
-              Icons.more_vert,
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'profile') {
+                  _openProfile();
+                } else if (value == 'logout') {
+                  _logout();
+                }
+              },
               color: Colors.white,
-              size: 28,
-            ),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'profile',
-                child: Row(
-                  children: const [
-                    Icon(
-                      Icons.person_outline,
-                      color: Color(0xFF1e3a8a),
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      'Mi perfil',
-                      style: TextStyle(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(0xFF3b82f6),
+                  child: Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'profile',
+                  child: Row(
+                    children: const [
+                      Icon(
+                        Icons.person_outline,
                         color: Color(0xFF1e3a8a),
-                        fontWeight: FontWeight.w500,
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 12),
+                      Text(
+                        'Mi perfil',
+                        style: TextStyle(
+                          color: Color(0xFF1e3a8a),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuDivider(height: 8),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: const [
-                    Icon(
-                      Icons.logout,
-                      color: Color(0xFFdc2626),
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      'Cerrar sesión',
-                      style: TextStyle(
+                const PopupMenuDivider(height: 8),
+                PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: const [
+                      Icon(
+                        Icons.logout,
                         color: Color(0xFFdc2626),
-                        fontWeight: FontWeight.w500,
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 12),
+                      Text(
+                        'Cerrar sesión',
+                        style: TextStyle(
+                          color: Color(0xFFdc2626),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
-
       body: _pages[_currentIndex],
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
