@@ -45,7 +45,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-//Decide que pantalla mostrar segun el inicio de sesion
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -63,10 +62,29 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _setupAuthListener() {
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final event = data.event;
+      
       if (event == AuthChangeEvent.passwordRecovery) {
         setState(() => _showResetPassword = true);
+      }
+      
+      // Cuando el usuario confirma email, cerrar sesion para que haga login manual
+      if (event == AuthChangeEvent.signedIn) {
+        final user = data.session?.user;
+        if (user != null) {
+          // Verificar si el perfil existe
+          final profile = await Supabase.instance.client
+              .from('profiles')
+              .select('id')
+              .eq('id', user.id)
+              .maybeSingle();
+          
+          // Si no existe el perfil, cerrar sesion para que haga login manual
+          if (profile == null) {
+            await Supabase.instance.client.auth.signOut();
+          }
+        }
       }
     });
   }
@@ -82,49 +100,18 @@ class _AuthGateState extends State<AuthGate> {
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
 
-        // Mientras carga
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // Si NO hay sesion -> Login
         if (session == null) {
           return const LoginScreen();
         }
 
-        // Si hay sesion -> Enviar al dashboard principal
         return const DashboardScreen();
       },
     );
   }
 }
-
-class HomeTemp extends StatelessWidget {
-  const HomeTemp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('UrbanReport'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await Supabase.instance.client.auth.signOut();
-            },
-          )
-        ],
-      ),
-      body: const Center(
-        child: Text(
-          'Sesión iniciada correctamente 🚀',
-          style: TextStyle(fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
-
